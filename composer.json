@@ -1,0 +1,18 @@
+{
+    "name": "ict-medianp/sscasn",
+    "description": "scraping data it cpns",
+    "require": {
+        "phpoffice/phpspreadsheet": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "IctMedianp\\Sscasn\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "mnprasetya",
+            "email": "mnprasetya.labs@gmail.com"
+        }
+    ]
+}
