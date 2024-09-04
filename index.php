@@ -1,4 +1,9 @@
 <?php
+require 'vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 $offset = 0;
 $data = array();
 $multiCurl = curl_multi_init();
@@ -47,15 +52,23 @@ do {
 
         // Tambahkan data yang diambil ke dalam array data
         if ($decodedResponse !== null && isset($decodedResponse["data"]["data"])) {
-            $data = array_merge($data, $decodedResponse["data"]["data"]);
-            echo "Berhasil get data offset " . array_search($ch, $curlHandles) . "\n";
-        }
+            foreach ($decodedResponse["data"]["data"] as $item) {
+                // Hapus formasi_id
+                unset($item['formasi_id']);
 
+                // Ubah format gaji_min dan gaji_max menjadi float dan format uang IDR
+                $item['gaji_min'] = (float) $item['gaji_min'];
+                $item['gaji_max'] = (float) $item['gaji_max'];
+                $data[] = $item;
+            }
+            echo "Collected until " . array_search($ch, $curlHandles) . " data \n";
+        }
+        
         // Jika jumlah data kurang dari 10, hentikan proses
         if (isset($decodedResponse["data"]["data"]) && count($decodedResponse["data"]["data"]) < 10) {
             break 2; // Keluar dari loop utama dan do-while
         }
-
+        
         // Tutup handle curl yang sudah selesai
         curl_multi_remove_handle($multiCurl, $ch);
         curl_close($ch);
@@ -70,9 +83,19 @@ do {
     }
 } while ($running);
 
-// Simpan data dalam file JSON
-$fp = fopen('data.json', 'w');
-fwrite($fp, json_encode($data, JSON_PRETTY_PRINT));
-fclose($fp);
-
 curl_multi_close($multiCurl);
+echo "generate excel file before exit";
+
+// Ekspor data ke file Excel
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setTitle('Teknik Informatika 2024');
+
+$headers = array_keys($data[0]);
+$sheet->fromArray($headers, NULL, 'A1');
+$sheet->fromArray($data, NULL, 'A2');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('Data-CPNS-Teknik-Informatika-2024.xlsx');
+
+echo "Data berhasil diekspor ke Data-CPNS-Teknik-Informatika-2024.xlsx\n";
